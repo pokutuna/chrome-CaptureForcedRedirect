@@ -18,23 +18,23 @@ function start(tab) {
     console.log(`${tab.id}: The bomb has been planted.`);
     setIcon(tab.id, true);
 
-    let obj = {
-        url: tab.url,
+    let obj = { url: tab.url };
 
-        dumpTimer: setInterval(() => {
-            try {
-                chrome.pageCapture.saveAsMHTML({ tabId: tab.id }, (blob) => obj.dump = blob);
-            } catch(e) {
-                // nice catch
-            }
-        }, 1000),
+    let updateDump = () => {
+        chrome.pageCapture.saveAsMHTML({ tabId: tab.id }, (blob) => obj.dump = blob);
+    }
 
-        reloadTimer: setInterval(() => {
-            chrome.tabs.reload(tab.id, null, () => setIcon(tab.id, true));
-            setIcon(tab.id, true);
-            console.log(`${tab.id} reloaded.`);
-        }, 1000 * 60 * 5)
-    };
+    obj.dumpTimer = setInterval(updateDump, 1000);
+
+    obj.reloadTimer = setInterval(() => {
+        clearInterval(obj.dumpTimer);
+
+        chrome.tabs.reload(tab.id, null, () => {
+            obj.dumpTimer = setInterval(updateDump, 1000);
+        });
+        setIcon(tab.id, true);
+        console.log(`${tab.id} reloaded.`);
+    }, 1000 * 60 * 4); // 4 min
 
     bombs[tab.id] = obj;
 }
