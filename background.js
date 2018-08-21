@@ -22,7 +22,8 @@ function start(tab) {
 
     let updateDump = () => {
         chrome.pageCapture.saveAsMHTML({ tabId: tab.id }, (blob) => obj.dump = blob);
-    }
+        setIcon(tab.id, true);
+    };
 
     obj.dumpTimer = setInterval(updateDump, 1000);
 
