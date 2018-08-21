@@ -33,7 +33,7 @@ function start(tab) {
             chrome.tabs.reload(tab.id, null, () => setIcon(tab.id, true));
             setIcon(tab.id, true);
             console.log(`${tab.id} reloaded.`);
-        }, 10000)
+        }, 1000 * 60 * 5)
     };
 
     bombs[tab.id] = obj;
