@@ -3,7 +3,7 @@ chrome-CaptureForcedRedirect
 
 強制リダイレクト広告の報告をいくつか受けて作成
 
-https://chrome.google.com/webstore/detail/CaptureForcedRedirect/lbahfihialbndmglcoibiblpddnconea (予定地)
+https://chrome.google.com/webstore/detail/captureforcedredirect/lbahfihialbndmglcoibiblpddnconea
 
 ## 使い方
 
