@@ -3,10 +3,10 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 });
 
 // { tab.id : { url, mhtml, mhtmlTimer, frames, framesTimer, reloadTimer, reloadCount } }
-let bombs = {};
+let sentries = {};
 
 chrome.pageAction.onClicked.addListener((tab) => {
-    let obj = bombs[tab.id];
+    let obj = sentries[tab.id];
     obj ? stop(tab.id) : start(tab);
 });
 
@@ -15,7 +15,7 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => check(tabId, changeInfo
 chrome.tabs.onRemoved.addListener((tabId, removeInfo) => stop(tabId));
 
 function start(tab) {
-    console.log(`${tab.id}: The bomb has been planted.`);
+    console.log(`${tab.id}: start watching.`);
     setIcon(tab.id, true);
 
     let obj = {
@@ -23,10 +23,16 @@ function start(tab) {
         reloadCount: 0
     };
 
-    let updateDump = () => {
-        chrome.pageCapture.saveAsMHTML({ tabId: tab.id }, (blob) => obj.mhtml = blob);
+    let updateMhtml = () => {
+        chrome.pageCapture.saveAsMHTML({
+            tabId: tab.id
+        }, (blob) => {
+            obj.mhtml = blob;
+            obj.mhtmlTimer = setTimeout(updateMhtml, 1000);
+        });
         setIcon(tab.id, true);
     };
+    obj.mhtmlTimer = setInterval(updateMhtml, 1000);
 
     let updateFrames = () => {
         chrome.tabs.executeScript(tab.id, {
@@ -41,29 +47,26 @@ function start(tab) {
             obj.framesTimer = setTimeout(updateFrames, 1000);
         });
     };
-
-    obj.mhtmlTimer = setInterval(updateDump, 1000);
-
     obj.framesTimer = setTimeout(updateFrames, 1000);
 
     obj.reloadTimer = setInterval(() => {
-        clearInterval(obj.mhtmlTimer);
+        clearTimeout(obj.mhtmlTimer);
         clearTimeout(obj.framesTimer);
 
         chrome.tabs.reload(tab.id, null, () => {
             obj.reloadCount += 1;
-            obj.mhtmlTimer = setInterval(updateDump, 1000);
+            obj.mhtmlTimer  = setTimeout(updateMhtml, 1000);
             obj.framesTimer = setTimeout(updateFrames, 1000);
         });
         setIcon(tab.id, true);
         console.log(`${tab.id} reloaded.`);
     }, 1000 * 60 * 1); // 1 min
 
-    bombs[tab.id] = obj;
+    sentries[tab.id] = obj;
 }
 
 function check(tabId, changeInfo) {
-    let obj = bombs[tabId];
+    let obj = sentries[tabId];
     if (!obj) return;
 
     if (changeInfo.url && changeInfo.url !== obj.url) {
@@ -80,15 +83,16 @@ function check(tabId, changeInfo) {
 }
 
 function stop(tabId) {
-    let obj = bombs[tabId];
+    let obj = sentries[tabId];
     if (!obj) return;
 
     setIcon(tabId, false);
-    clearInterval(obj.mhtmlTimer);
+    clearTimeout(obj.mhtmlTimer);
+    clearTimeout(obj.framesTimer);
     clearInterval(obj.reloadTimer);
 
-    delete bombs[tabId];
-    console.log(`${tabId} stopped`);
+    delete sentries[tabId];
+    console.log(`${tabId} stopped.`);
 }
 
 function setIcon(tabId, enabled) {
