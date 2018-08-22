@@ -98,7 +98,7 @@ function stop(tabId) {
 function setIcon(tabId, enabled) {
     chrome.pageAction.setIcon({
         tabId: tabId,
-        path: !enabled ? 'img/icon-128.png' : 'img/icon-128-planted.png'
+        path: !enabled ? 'img/ghost1.png' : 'img/ghost2.png'
     });
 }
 
