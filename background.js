@@ -1,9 +1,19 @@
+let sentries = {};
+// {
+//   tab.id : {
+//     url,
+//     mhtml, mhtmlTimer,
+//     frames, framesTimer,
+//     reloadTimer, reloadCount
+//   }, ...
+// }
+
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     chrome.pageAction.show(tabId);
+
+    if (sentries[tabId]) setIcon(tab.id, true);
 });
 
-// { tab.id : { url, mhtml, mhtmlTimer, frames, framesTimer, reloadTimer, reloadCount } }
-let sentries = {};
 
 chrome.pageAction.onClicked.addListener((tab) => {
     let obj = sentries[tab.id];
@@ -27,10 +37,14 @@ function start(tab) {
         chrome.pageCapture.saveAsMHTML({
             tabId: tab.id
         }, (blob) => {
-            obj.mhtml = blob;
+            if (chrome.runtime.lastError) {
+                console.error(`${tab.id}: failed to capture as mhtml.`, chrome.runtime.lastError);
+            } else {
+                obj.mhtml = blob;
+            }
+            clearTimeout(obj.mhtmlTimer);
             obj.mhtmlTimer = setTimeout(updateMhtml, 1000);
         });
-        setIcon(tab.id, true);
     };
     obj.mhtmlTimer = setInterval(updateMhtml, 1000);
 
@@ -40,10 +54,11 @@ function start(tab) {
             code: 'JSON.stringify({ url: location.href, html: document.documentElement.innerHTML })'
         }, function(frames) {
             if (chrome.runtime.lastError) {
-                console.error(`${tab.id}: ${chrome.runtime.lastError}`);
+                console.error(`${tab.id}: failed to capture frames.`, chrome.runtime.lastError);
             } else {
                 obj.frames = frames;
             }
+            clearTimeout(obj.framesTimer);
             obj.framesTimer = setTimeout(updateFrames, 1000);
         });
     };
@@ -58,8 +73,7 @@ function start(tab) {
             obj.mhtmlTimer  = setTimeout(updateMhtml, 1000);
             obj.framesTimer = setTimeout(updateFrames, 1000);
         });
-        setIcon(tab.id, true);
-        console.log(`${tab.id} reloaded.`);
+        console.log(`${tab.id}: reloaded.`);
     }, 1000 * 60 * 1); // 1 min
 
     sentries[tab.id] = obj;
@@ -70,7 +84,7 @@ function check(tabId, changeInfo) {
     if (!obj) return;
 
     if (changeInfo.url && changeInfo.url !== obj.url) {
-        console.log(`${tabId} captured at ${(new Date()).toISOString()}`);
+        console.log(`${tabId}: captured at ${(new Date()).toISOString()}`);
         download(
             `${tabId}-${Date.now()}.mhtml`,
             obj.mhtml
@@ -86,13 +100,14 @@ function stop(tabId) {
     let obj = sentries[tabId];
     if (!obj) return;
 
-    setIcon(tabId, false);
     clearTimeout(obj.mhtmlTimer);
     clearTimeout(obj.framesTimer);
     clearInterval(obj.reloadTimer);
 
     delete sentries[tabId];
-    console.log(`${tabId} stopped.`);
+
+    setIcon(tabId, false);
+    console.log(`${tabId}: stopped.`);
 }
 
 function setIcon(tabId, enabled) {
