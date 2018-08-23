@@ -42,8 +42,11 @@ function start(tab) {
             } else {
                 obj.mhtml = blob;
             }
-            clearTimeout(obj.mhtmlTimer);
-            obj.mhtmlTimer = setTimeout(updateMhtml, 1000);
+
+            if (sentries[tab.id]) {
+                clearTimeout(obj.mhtmlTimer);
+                obj.mhtmlTimer = setTimeout(updateMhtml, 1000);
+            }
         });
     };
     obj.mhtmlTimer = setInterval(updateMhtml, 1000);
@@ -58,8 +61,11 @@ function start(tab) {
             } else {
                 obj.frames = frames;
             }
-            clearTimeout(obj.framesTimer);
-            obj.framesTimer = setTimeout(updateFrames, 1000);
+
+            if (sentries[tab.id]) {
+                clearTimeout(obj.framesTimer);
+                obj.framesTimer = setTimeout(updateFrames, 1000);
+            }
         });
     };
     obj.framesTimer = setTimeout(updateFrames, 1000);
